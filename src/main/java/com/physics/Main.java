@@ -29,9 +29,13 @@ public class Main {
     private static final int HEIGHT = 768;
     private static final int FPS    = 60;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
-
+        // Pre-initialize AWT/Java2D on the AWT EDT before NEWT spins up its own
+        // display thread. Otherwise the first TextRenderer.draw() call triggers
+        // GraphicsEnvironment + Metal init from the NEWT EDT and deadlocks on macOS.
+        javax.swing.SwingUtilities.invokeAndWait(
+                java.awt.GraphicsEnvironment::getLocalGraphicsEnvironment);
 
         long start = System.nanoTime();
         // -- GL setup --

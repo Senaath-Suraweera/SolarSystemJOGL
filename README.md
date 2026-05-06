@@ -153,6 +153,3 @@ src/main/java/com/physics/
 - NASA JPL planetary fact sheets — <https://nssdc.gsfc.nasa.gov/planetary/factsheet/>
 - Standish, E. M. (1992). *Keplerian elements for approximate positions of the major planets.*
 
-## License
-
-MIT.

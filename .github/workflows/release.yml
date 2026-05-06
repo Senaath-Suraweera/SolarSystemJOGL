@@ -1,0 +1,90 @@
+name: Build installers
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            jpackage_type: dmg
+            artifact_name: SolarSystem-macos
+            artifact_glob: 'SolarSystem-*.dmg'
+          - os: macos-13
+            jpackage_type: dmg
+            artifact_name: SolarSystem-macos-intel
+            artifact_glob: 'SolarSystem-*.dmg'
+          - os: windows-latest
+            jpackage_type: msi
+            artifact_name: SolarSystem-windows
+            artifact_glob: 'SolarSystem-*.msi'
+          - os: ubuntu-latest
+            jpackage_type: deb
+            artifact_name: SolarSystem-linux-deb
+            artifact_glob: 'solarsystem_*.deb'
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Install WiX (Windows)
+        if: runner.os == 'Windows'
+        run: choco install wixtoolset -y --no-progress
+        shell: pwsh
+
+      - name: Install fakeroot (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y fakeroot
+
+      - name: Build shaded JAR
+        run: mvn -B -q clean package
+
+      - name: Build installer with jpackage
+        run: >
+          jpackage
+          --name SolarSystem
+          --input target
+          --main-jar SolarSystem.jar
+          --main-class com.physics.Main
+          --type ${{ matrix.jpackage_type }}
+          --app-version 1.0.0
+          --vendor "SolarSystem"
+          --dest dist
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.artifact_glob }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
