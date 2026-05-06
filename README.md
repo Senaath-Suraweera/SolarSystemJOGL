@@ -2,7 +2,7 @@
 
 A real-time 3D solar system simulation written in Java with [JOGL](https://jogamp.org/jogl/www/) (OpenGL bindings). Planets orbit the Sun using genuine Keplerian orbital mechanics derived from NASA JPL element tables, starting at the current real-world date and ticking forward at a user-controlled rate.
 
-![n/a](docs/screenshot.png)
+![SolarSystem screenshot](docs/Screenshot.png)
 
 ## What it does
 
