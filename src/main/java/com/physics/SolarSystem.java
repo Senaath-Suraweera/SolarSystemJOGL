@@ -129,23 +129,37 @@ public class SolarSystem {
      * Advance simulation and update all planet positions.
      */
     public void update() {
+        long start = System.nanoTime();
+
         clock.tick();
         double t = clock.getDaysSinceJ2000();
+
         for (Planet p : planets) {
+            long pStart = System.nanoTime();
             p.update(t);
+            DebugTimer.log("Planet update: " + p.getName(), pStart);
         }
+
+        DebugTimer.log("SolarSystem.update()", start);
     }
 
     /**
      * Draw orbit paths then all bodies.
      */
     public void draw(GL2 gl) {
+        long start = System.nanoTime();
+
         for (Planet p : planets) {
             p.drawOrbitPath(gl);
         }
+
         for (Planet p : planets) {
+            long pStart = System.nanoTime();
             p.draw(gl);
+            DebugTimer.log("Planet draw: " + p.getName(), pStart);
         }
+
+        DebugTimer.log("SolarSystem.draw()", start);
     }
 
     public List<Planet> getPlanets() { return planets; }

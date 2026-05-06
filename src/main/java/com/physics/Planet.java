@@ -74,15 +74,23 @@ public class Planet {
     }
 
     public void init(GL2 gl) {
+        long start = System.nanoTime();
+
         mesh.init(gl);
 
         if (!isSun && orbit != null) {
+            long t1 = System.nanoTime();
             vboOrbitPath = uploadOrbitPath(gl);
+            DebugTimer.log(name + " orbit upload", t1);
         }
 
         if (hasRing) {
+            long t2 = System.nanoTime();
             vboRing = uploadRing(gl);
+            DebugTimer.log(name + " ring upload", t2);
         }
+
+        DebugTimer.log(name + " init()", start);
     }
 
     private int uploadOrbitPath(GL2 gl) {
@@ -173,6 +181,7 @@ public class Planet {
     }
 
     public void draw(GL2 gl) {
+        long start = System.nanoTime();
         gl.glPushMatrix();
 
         gl.glTranslatef(displayX, displayY, displayZ);
@@ -201,6 +210,7 @@ public class Planet {
         }
 
         gl.glPopMatrix();
+        DebugTimer.log(name + " draw()", start);
     }
 
     private void drawRing(GL2 gl) {

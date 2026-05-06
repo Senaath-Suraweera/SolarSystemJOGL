@@ -23,11 +23,17 @@ import com.jogamp.opengl.util.FPSAnimator;
  */
 public class Main {
 
+
+
     private static final int WIDTH  = 1024;
     private static final int HEIGHT = 768;
     private static final int FPS    = 60;
 
     public static void main(String[] args) {
+
+
+
+        long start = System.nanoTime();
         // -- GL setup --
         GLProfile profile = GLProfile.get(GLProfile.GL2);
         GLCapabilities caps = new GLCapabilities(profile);
@@ -123,6 +129,7 @@ public class Main {
             }
         });
 
+        DebugTimer.log("Startup Time", start);
         window.setVisible(true);
         animator.start();
     }

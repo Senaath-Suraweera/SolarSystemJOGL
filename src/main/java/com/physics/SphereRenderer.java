@@ -30,6 +30,8 @@ public class SphereRenderer implements GLEventListener {
 
     @Override
     public void init(GLAutoDrawable drawable) {
+
+        long start = System.nanoTime();
         GL2 gl = drawable.getGL().getGL2();
 
         gl.glClearColor(0.01f, 0.01f, 0.03f, 1f);
@@ -56,62 +58,94 @@ public class SphereRenderer implements GLEventListener {
 
         // Build solar system and upload all geometry to the GPU
         solarSystem = new SolarSystem(clock);
+        long t1 = System.nanoTime();
         solarSystem.init(gl);
+        DebugTimer.log("SolarSystem.init()", t1);
 
         // HUD text
         textRenderer = new TextRenderer(new Font("SansSerif", Font.BOLD, 14));
+        DebugTimer.log("Renderer.init()", start);
     }
 
     @Override
     public void display(GLAutoDrawable drawable) {
+        long frameStart = System.nanoTime();
+
         GL2 gl = drawable.getGL().getGL2();
 
         gl.glClear(GL2.GL_COLOR_BUFFER_BIT | GL2.GL_DEPTH_BUFFER_BIT);
 
-        // Camera
+        long t1 = System.nanoTime();
         camera.applyMovementAndLookAt(gl);
+        DebugTimer.log("Camera", t1);
 
-        // Light at Sun
         float[] lightPos = { 0f, 0f, 0f, 1f };
         gl.glLightfv(GL2.GL_LIGHT0, GL2.GL_POSITION, lightPos, 0);
 
-        // Update & draw
+        long t2 = System.nanoTime();
         solarSystem.update();
-        solarSystem.draw(gl);
+        DebugTimer.log("Update", t2);
 
-        // HUD overlay
+        long t3 = System.nanoTime();
+        solarSystem.draw(gl);
+        DebugTimer.log("Draw SolarSystem", t3);
+
+        long t4 = System.nanoTime();
         drawHUD(gl);
+        DebugTimer.log("HUD", t4);
+
+        DebugTimer.log("Total Frame", frameStart);
+        DebugTimer.logFrame();
     }
 
     /**
      * Draw a 2D text overlay with date, speed, and controls.
      */
     private void drawHUD(GL2 gl) {
+        // Save ALL affected GL state manually before TextRenderer touches anything
+        gl.glMatrixMode(GL2.GL_PROJECTION);
+        gl.glPushMatrix();           // save projection  [stack depth: 1]
+        gl.glLoadIdentity();
+
+        gl.glMatrixMode(GL2.GL_MODELVIEW);
+        gl.glPushMatrix();           // save modelview   [stack depth: 1]
+        gl.glLoadIdentity();
+
+        gl.glDisable(GL2.GL_LIGHTING);
+        gl.glDisable(GL2.GL_DEPTH_TEST);
+
+        // Now let TextRenderer do its thing — stacks are at known depth
         textRenderer.beginRendering(viewportWidth, viewportHeight);
 
-        // Date & speed (top-left)
         textRenderer.setColor(Color.WHITE);
-        String dateStr = "Date: " + clock.getDateString();
-        textRenderer.draw(dateStr, 10, viewportHeight - 22);
+        textRenderer.draw("Date: " + clock.getDateString(), 10, viewportHeight - 22);
 
-        String speedStr;
         double mult = clock.getSpeedMultiplier();
-        if (mult >= 86400) {
-            speedStr = String.format("Speed: %.0f days/sec", mult / 86400.0);
-        } else if (mult >= 3600) {
-            speedStr = String.format("Speed: %.0f hrs/sec", mult / 3600.0);
-        } else {
-            speedStr = String.format("Speed: %.0fx", mult);
-        }
+        String speedStr;
+        if      (mult >= 86400) speedStr = String.format("Speed: %.0f days/sec", mult / 86400.0);
+        else if (mult >= 3600)  speedStr = String.format("Speed: %.0f hrs/sec",  mult / 3600.0);
+        else                    speedStr = String.format("Speed: %.0fx", mult);
         if (clock.isPaused()) speedStr += "  [PAUSED]";
         textRenderer.draw(speedStr, 10, viewportHeight - 42);
 
-        // Controls (bottom-left)
         textRenderer.setColor(new Color(0.6f, 0.6f, 0.7f));
         textRenderer.draw("WASD: move  |  Mouse: look  |  Scroll: zoom", 10, 38);
         textRenderer.draw("+/-: speed  |  Space: pause  |  R: reset date  |  Esc: quit", 10, 18);
 
         textRenderer.endRendering();
+
+        // Restore modelview
+        gl.glMatrixMode(GL2.GL_MODELVIEW);
+        gl.glPopMatrix();
+
+        // Restore projection
+        gl.glMatrixMode(GL2.GL_PROJECTION);
+        gl.glPopMatrix();
+
+        // Restore 3D state
+        gl.glEnable(GL2.GL_LIGHTING);
+        gl.glEnable(GL2.GL_DEPTH_TEST);
+        gl.glMatrixMode(GL2.GL_MODELVIEW);
     }
 
     @Override
